@@ -6,7 +6,7 @@
 
 **1.** Scenario 1: You’re at home and need to drive to work
 
-<img src = 'Images/Scenario_1.png'>
+<img src = '../Images/Scenario_1.png'>
 
 During the trip, you will be performing OEDR tasks. Of the tasks below, which of the following is **not** an example of OEDR?
 
@@ -58,7 +58,7 @@ During the trip, you will be performing OEDR tasks. Of the tasks below, which of
 
 You’re approaching an all ways stop sign and you want to make a right turn. Your vehicle is denoted in orange. There are 2 pedestrians currently crossing and another vehicle (denoted in green) approaching the stop sign from the left.
 
-<img src = "Images/Scenario_2.png">
+<img src = "../Images/Scenario_2.png">
 
 This task involves multiple considerations, which of them are **predictive planning**? Select all that apply.
 
@@ -127,7 +127,7 @@ This task involves multiple considerations, which of them are **predictive plann
 
 **10.** **Scenario 3:** You are on the highway and you see a truck in front of you. Assume the car is driving on the right-hand side of the road. There is also a blue car beside the truck in the other lane.
 
-<img src = 'Images/Scenario_3.png'>
+<img src = '../Images/Scenario_3.png'>
 
 Your vehicle follows the truck and maintains a constant distance away. What kind of **control** is this?
 
@@ -189,13 +189,13 @@ Your vehicle follows the truck and maintains a constant distance away. What kind
 
 Assume the car is driving on the right-hand side of the road. Your vehicle is denoted in orange.
 
-<img src = 'Images/Scenario_4.png'>
+<img src = '../Images/Scenario_4.png'>
 
 You see a  construction site where the workers are repaving a road full of  potholes. They are using jackhammers which can cause dust clouds.
 
 You  create the following decision tree for getting through the construction  site. From the diagram, which of the following decisions should you  make? **(green is true, red is false)** 
 
-<img src = 'Images/flowchart.png'>
+<img src = '../Images/flowchart.png'>
 
 **Ans : ** 
 
@@ -229,7 +229,7 @@ You  create the following decision tree for getting through the construction  si
 
 **17.** **Scenario 5:** You’re finished work and need to drive back home, but it’s nighttime.
 
-<img src = 'Images/Scenario_5.jpg'>
+<img src = '../Images/Scenario_5.jpg'>
 
 You plan a new path home on your GPS application to avoid the construction site, **what type of planning is this**?
 
@@ -245,7 +245,7 @@ You plan a new path home on your GPS application to avoid the construction site,
 
 **18.** Your new path goes through a school zone and you see the school zone sign. You decide to slow down despite there being no pedestrians or children (it’s nighttime). What sort of **planning** is this?
 
-<img src = 'Images/Q20.png'>
+<img src = '../Images/Q20.png'>
 
 **Ans : ** 
 
