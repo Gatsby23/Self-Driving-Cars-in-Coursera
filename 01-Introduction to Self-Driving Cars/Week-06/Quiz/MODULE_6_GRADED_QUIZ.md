@@ -61,7 +61,7 @@ The lookahead distance is 15 m; the car length is 5 m; the angle between the veh
 
 **Ans : **
 
-<img src = "Images/error_correct.png">
+<img src = "../Images/error_correct.png">
 
 <br><br>
 

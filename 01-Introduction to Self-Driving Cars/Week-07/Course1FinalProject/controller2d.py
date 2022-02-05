@@ -10,23 +10,23 @@ import numpy as np
 class Controller2D(object):
     def __init__(self, waypoints):
         self.vars                = cutils.CUtils()
-        self._current_x          = 0
-        self._current_y          = 0
-        self._current_yaw        = 0
-        self._current_speed      = 0
-        self._desired_speed      = 0
-        self._current_frame      = 0
-        self._current_timestamp  = 0
+        self._current_x          = 0                                # 当前x坐标
+        self._current_y          = 0                                # 当前y坐标
+        self._current_yaw        = 0                                # 当前航向角
+        self._current_speed      = 0                                # 当前速度
+        self._desired_speed      = 0                                # 期望速度
+        self._current_frame      = 0                                # 当前坐标系
+        self._current_timestamp  = 0                                # 当前采样时间
         self._start_control_loop = False
-        self._set_throttle       = 0
-        self._set_brake          = 0
-        self._set_steer          = 0
+        self._set_throttle       = 0                                # 当前推力设置
+        self._set_brake          = 0                                # 当前制动设置
+        self._set_steer          = 0                                # 当前转向设置
         self._waypoints          = waypoints
         self._conv_rad_to_steer  = 180.0 / 70.0 / np.pi
         self._pi                 = np.pi
         self._2pi                = 2.0 * np.pi
 
-    def update_values(self, x, y, yaw, speed, timestamp, frame):
+    def update_values(self, x, y, yaw, speed, timestamp, frame):    # 更新当前的状态变量
         self._current_x         = x
         self._current_y         = y
         self._current_yaw       = yaw
@@ -36,11 +36,13 @@ class Controller2D(object):
         if self._current_frame:
             self._start_control_loop = True
 
-    def update_desired_speed(self):
+    def update_desired_speed(self):                                 # 更新期望的速度
         min_idx       = 0
         min_dist      = float("inf")
         desired_speed = 0
+        # 遍历所有导航点
         for i in range(len(self._waypoints)):
+            # 计算当前坐标对应的最近的导航点
             dist = np.linalg.norm(np.array([
                     self._waypoints[i][0] - self._current_x,
                     self._waypoints[i][1] - self._current_y]))
@@ -53,18 +55,18 @@ class Controller2D(object):
             desired_speed = self._waypoints[-1][2]
         self._desired_speed = desired_speed
 
-    def update_waypoints(self, new_waypoints):
+    def update_waypoints(self, new_waypoints):                      # 更新期望的导航点
         self._waypoints = new_waypoints
 
-    def get_commands(self):
+    def get_commands(self):                                         # 获取当前的控制命令值
         return self._set_throttle, self._set_steer, self._set_brake
 
-    def set_throttle(self, input_throttle):
+    def set_throttle(self, input_throttle):                         # 设置推力值
         # Clamp the throttle command to valid bounds
         throttle           = np.fmax(np.fmin(input_throttle, 1.0), 0.0)
         self._set_throttle = throttle
 
-    def set_steer(self, input_steer_in_rad):
+    def set_steer(self, input_steer_in_rad):                        # 设置转向值
         # Covnert radians to [-1, 1]
         input_steer = self._conv_rad_to_steer * input_steer_in_rad
 
@@ -72,7 +74,7 @@ class Controller2D(object):
         steer           = np.fmax(np.fmin(input_steer, 1.0), -1.0)
         self._set_steer = steer
 
-    def set_brake(self, input_brake):
+    def set_brake(self, input_brake):                               # 设置制动值
         # Clamp the steering command to valid bounds
         brake           = np.fmax(np.fmin(input_brake, 1.0), 0.0)
         self._set_brake = brake
@@ -80,6 +82,7 @@ class Controller2D(object):
     def update_controls(self):
         ######################################################
         # RETRIEVE SIMULATOR FEEDBACK
+        # 获取仿真器反馈的状态
         ######################################################
         x               = self._current_x
         y               = self._current_y
@@ -96,6 +99,7 @@ class Controller2D(object):
         ######################################################
         ######################################################
         # MODULE 7: DECLARE USAGE VARIABLES HERE
+        # 声明使用到的变量
         ######################################################
         ######################################################
         """
@@ -113,12 +117,10 @@ class Controller2D(object):
             Example: Accessing the value from 'v_previous' to be used
             throttle_output = 0.5 * self.vars.v_previous
         """
-        self.vars.create_var('v_previous', 0.0)
-        self.vars.create_var('t_previous', 0.0)
-        self.vars.create_var('error_previous', 0.0)
-        self.vars.create_var('integral_error_previous', 0.0)
-        self.vars.create_var('throttle_previous', 0.0)
-
+        self.vars.create_var('v_previous', 0.0)                 # 前一帧的速度
+        self.vars.create_var('t_previous', 0.0)                 # 前一帧的时间
+        self.vars.create_var('v_error_previous', 0.0)           # 前一帧的误差项
+        self.vars.create_var('integral_v_error_previous', 0.0)    # 前一帧的积分项
 
         # Skip the first frame to store previous values properly
         if self._start_control_loop:
@@ -157,6 +159,7 @@ class Controller2D(object):
             ######################################################
             ######################################################
             # MODULE 7: IMPLEMENTATION OF LONGITUDINAL CONTROLLER HERE
+            # 纵向控制律的实现，这里采用PID控制器
             ######################################################
             ######################################################
             """
@@ -169,39 +172,35 @@ class Controller2D(object):
             # brake_output is optional and is not required to pass the
             # assignment, as the car will naturally slow down over time.
 
-            kp = 1.0
-            ki = 0.2
-            kd = 0.01
-
             throttle_output = 0
             brake_output    = 0
 
-            # pid control
-            st = t - self.vars.t_previous
+            # 设置PID的系数
+            Kp = 1.2
+            Ki = 0.5
+            Kd = 0.02
 
-            # error term
-            e_v = v_desired - v
+            # PID控制
+            dt = t - self.vars.t_previous
+            v_error = v_desired - v
+            integral_v_error = self.vars.integral_v_error_previous + v_error * dt
+            derivate_v_error = (v_error - self.vars.v_error_previous) / dt
+            acc = Kp * v_error + Ki *integral_v_error + Kd * derivate_v_error                # 输出加速度
+            u = np.tanh(acc)                                                                 # 控制指令值
 
-            # I
-            inte_v = self.vars.integral_error_previous + e_v * st
-
-            # D
-            derivate = (e_v - self.vars.error_previous) / st
-
-            acc = kp * e_v + ki * inte_v + kd * derivate
-
-            if acc > 0:
-                throttle_output = (np.tanh(acc) + 1)/2
-                # throttle_output = max(0.0, min(1.0, throttle_output))
-                if throttle_output - self.vars.throttle_previous > 0.1:
-                    throttle_output = self.vars.throttle_previous + 0.1
+            # 将输出加速度映射到0-1之间
+            # 当加速度大于0时
+            if u > 0:
+                throttle_output = u                                                          # [0,1]
             else:
-                throttle_output = 0
+                brake_output = -u 
 
+            # 更新持久变量
 
             ######################################################
             ######################################################
             # MODULE 7: IMPLEMENTATION OF LATERAL CONTROLLER HERE
+            # 横向控制律的实现，这里采用斯坦利控制
             ######################################################
             ######################################################
             """
@@ -210,51 +209,66 @@ class Controller2D(object):
                 example, can treat self.vars.v_previous like a "global variable".
             """
             
-            # Change the steer output with the lateral controller. 
-            steer_output = 0
+            
+            steer_output    = 0
 
-            # Use stanley controller for lateral control
-            k_e = 0.3
+            # 斯坦利控制器系数
+            k_e = 1.0     
             slope = (waypoints[-1][1]-waypoints[0][1])/ (waypoints[-1][0]-waypoints[0][0])
-            a = -slope
-            b = 1.0
-            c = (slope*waypoints[0][0]) - waypoints[0][1]
+            a = slope
+            b = -1.0
+            c = waypoints[0][1] - (slope*waypoints[0][0])                               
+            
+            # 参考路径的航向
+            yaw_ref_path =  np.arctan2(waypoints[-1][1]-waypoints[0][1], waypoints[-1][0]-waypoints[0][0])
+            
+            # 航向误差并归一化到[-pi,pi]
 
-            # heading error
-            yaw_path = np.arctan2(waypoints[-1][1]-waypoints[0][1], waypoints[-1][0]-waypoints[0][0])
-            # yaw_path = np.arctan2(slope, 1.0)  # This was turning the vehicle only to the right (some error)
-            yaw_diff_heading = yaw_path - yaw 
-            if yaw_diff_heading > np.pi:
-                yaw_diff_heading -= 2 * np.pi
-            if yaw_diff_heading < - np.pi:
-                yaw_diff_heading += 2 * np.pi
+            heading_error = yaw_ref_path - yaw 
+            if heading_error > np.pi:
+                heading_error -= 2 * np.pi
+            if heading_error < - np.pi:
+                heading_error += 2 * np.pi
 
-            # crosstrack erroe
-            current_xy = np.array([x, y])
-            crosstrack_error = np.min(np.sum((current_xy - np.array(waypoints)[:, :2])**2, axis=1))
-            yaw_cross_track = np.arctan2(y-waypoints[0][1], x-waypoints[0][0])
-            yaw_path2ct = yaw_path - yaw_cross_track
+
+            # 交叉跟踪误差                                                            
+            # crosstrack_error = np.min(np.sum(( np.array([x,y]) - np.array(waypoints)[:, :2] )**2, axis=1))                # 交叉跟踪误差
+            crosstrack_error = (a*x + b*y + c)/np.sqrt(a**2 + b**2)
+
+            yaw_cross_track = np.arctan2(y-waypoints[0][1], x-waypoints[0][0])                                          # 当前位置到第一个导航点连线的角度
+
+            # 判断参考路径方向与当前前进方向的夹角来调整交叉跟踪误差的正负
+
+            yaw_path2ct = yaw_ref_path - yaw_cross_track
             if yaw_path2ct > np.pi:
                 yaw_path2ct -= 2 * np.pi
             if yaw_path2ct < - np.pi:
                 yaw_path2ct += 2 * np.pi
+
             if yaw_path2ct > 0:
                 crosstrack_error = abs(crosstrack_error)
             else:
                 crosstrack_error = - abs(crosstrack_error)
-            yaw_diff_crosstrack = np.arctan(k_e * crosstrack_error / (v))
 
-            # final expected steering
-            steer_expect = yaw_diff_crosstrack + yaw_diff_heading
+
+            # 交叉跟踪转向角
+            crosstrack_steering = np.arctan(k_e * crosstrack_error / (v))
+
+
+            # 期望转向角并进行归一化到[-pi,pi]
+            steer_expect = heading_error+ crosstrack_steering
             if steer_expect > np.pi:
                 steer_expect -= 2 * np.pi
             if steer_expect < - np.pi:
                 steer_expect += 2 * np.pi
+
+            # 转向饱和抑制
             steer_expect = min(1.22, steer_expect)
             steer_expect = max(-1.22, steer_expect)
 
-            #update
+            # Change the steer output with the lateral controller. 
             steer_output = steer_expect
+
 
             ######################################################
             # SET CONTROLS OUTPUT
@@ -266,6 +280,7 @@ class Controller2D(object):
         ######################################################
         ######################################################
         # MODULE 7: STORE OLD VALUES HERE (ADD MORE IF NECESSARY)
+        # 储存旧值
         ######################################################
         ######################################################
         """
@@ -274,7 +289,6 @@ class Controller2D(object):
             in the next iteration)
         """
         self.vars.v_previous = v  # Store forward speed to be used in next step
-        self.vars.throttle_previous = throttle_output
         self.vars.t_previous = t
-        self.vars.error_previous = e_v
-        self.vars.integral_error_previous = inte_v
+        self.vars.v_error_previous = v_error
+        self.vars.integral_v_error_previous = integral_v_error

@@ -234,15 +234,19 @@ def exec_waypoint_nav_demo(args):
     """ Executes waypoint navigation demo.
     """
 
+    # 创建客户端连接
     with make_carla_client(args.host, args.port) as client:
         print('Carla client connected.')
 
+        # 创建配置文件
         settings = make_carla_settings(args)
 
         # Now we load these settings into the server. The server replies
         # with a scene description containing the available start spots for
         # the player. Here we can provide a CarlaSettings object or a
         # CarlaSettings.ini file as string.
+        # 现在我们将这些设置加载到服务器中。服务器返回一个包含玩家可用起始点的场景描述。
+        # 在这里我们可以提供一个 CarlaSettings 对象或一个 CarlaSettings.ini 文件。
         scene = client.load_settings(settings)
 
         # Refer to the player start folder in the WorldOutliner to see the 
@@ -252,11 +256,13 @@ def exec_waypoint_nav_demo(args):
         # Notify the server that we want to start the episode at the
         # player_start index. This function blocks until the server is ready
         # to start the episode.
+        # 通知服务器我们要在 player_start 索引处开始片段。 在服务器准备好开始片段之前，此函数会一直阻塞。
         print('Starting new episode at %r...' % scene.map_name)
         client.start_episode(player_start)
 
         #############################################
         # Load Configurations
+        # 载入配置
         #############################################
 
         # Load configuration file (options.cfg) and then parses for the various
@@ -279,6 +285,7 @@ def exec_waypoint_nav_demo(args):
 
         #############################################
         # Load Waypoints
+        # 载入导航点
         #############################################
         # Opens the waypoint file and stores it to "waypoints"
         waypoints_file = WAYPOINTS_FILENAME
@@ -305,9 +312,17 @@ def exec_waypoint_nav_demo(args):
         # show just what sort of effects these points have on the controller.
         # Can you spot these during the simulation? If so, how can you further
         # reduce these effects?
+        # 因为导航点是离散的，并且我们的控制器在连续路径上表现更好，其中我们将在距离车辆最近的点的一些前瞻距离内导航点的子集发送给车辆。
+        # 在每个导航点之间进行插值将提供具有更精细分辨率的路径并使其更“连续”。
+        # 一个简单的线性插值被用作解决此问题的初步方法，尽管使用更好的插值方法（例如样条插值）可以更好地解决它。 
+        # 为了演示离散路径对控制器的影响，此处将不使用更合适的插值方法。 
+        # 线性插值使这一点变得更加明显，因为在某种程度上路径的一部分将是连续的，而不连续的部分（发生在导航点处）将显示这些点对控制器的影响。 
+        # 你能在仿真过程中发现这些吗？ 如果是这样，您如何进一步减少这些影响？
         
         # Linear interpolation computations
+        # 线性插值计算
         # Compute a list of distances between waypoints
+        # 计算导航点之间的距离
         wp_distance = []   # distance array
         for i in range(1, waypoints_np.shape[0]):
             wp_distance.append(
@@ -317,11 +332,13 @@ def exec_waypoint_nav_demo(args):
                                # from the last waypoint to the last waypoint
 
         # Linearly interpolate between waypoints and store in a list
+        # 对导航点进行线性插值并存储在列表中
         wp_interp      = []    # interpolated values 
                                # (rows = waypoints, columns = [x, y, v])
         wp_interp_hash = []    # hash table which indexes waypoints_np
                                # to the index of the waypoint in wp_interp
         interp_counter = 0     # counter for current interpolated point index
+        # 遍历每一个导航点
         for i in range(waypoints_np.shape[0] - 1):
             # Add original waypoint to interpolated waypoints list (and append
             # it to the hash table)
@@ -348,6 +365,7 @@ def exec_waypoint_nav_demo(args):
 
         #############################################
         # Controller 2D Class Declaration
+        # 创建2D控制器类
         #############################################
         # This is where we take the controller2d.py class
         # and apply it to the simulator
@@ -355,6 +373,7 @@ def exec_waypoint_nav_demo(args):
 
         #############################################
         # Determine simulation average timestep (and total frames)
+        # 确定仿真平均时间步长（和总帧数）
         #############################################
         # Ensure at least one frame is used to compute average timestep
         num_iterations = ITER_FOR_SIM_TIMESTEP
@@ -365,12 +384,16 @@ def exec_waypoint_nav_demo(args):
         # simulator starting game time. Note that we also need to
         # send a command back to the CARLA server because synchronous mode
         # is enabled.
+        # 从 CARLA 服务器收集当前数据。 这用于获取模拟器开始游戏的时间。 
+        # 请注意，由于启用了同步模式，我们还需要将命令发送回 CARLA 服务器。
         measurement_data, sensor_data = client.read_data()
         sim_start_stamp = measurement_data.game_timestamp / 1000.0
         # Send a control command to proceed to next iteration.
         # This mainly applies for simulations that are in synchronous mode.
+        # 发送控制命令继续下一次迭代。这主要适用于同步模式下的仿真。
         send_control_command(client, throttle=0.0, steer=0, brake=1.0)
         # Computes the average timestep based on several initial iterations
+        # 根据几个初始迭代计算平均时间步长
         sim_duration = 0
         for i in range(num_iterations):
             # Gather current data
@@ -393,6 +416,7 @@ def exec_waypoint_nav_demo(args):
 
         #############################################
         # Frame-by-Frame Iteration and Initialization
+        # 一帧一帧的迭代和初始化
         #############################################
         # Store pose history starting from the start position
         measurement_data, sensor_data = client.read_data()
@@ -406,6 +430,7 @@ def exec_waypoint_nav_demo(args):
 
         #############################################
         # Vehicle Trajectory Live Plotting Setup
+        # 实时车辆轨迹绘图设置
         #############################################
         # Uses the live plotter to generate live feedback during the simulation
         # The two feedback includes the trajectory feedback and
@@ -492,9 +517,15 @@ def exec_waypoint_nav_demo(args):
             lp_traj._root.withdraw()
             lp_1d._root.withdraw()        
 
+        #####################################################################
         # Iterate the frames until the end of the waypoints is reached or
         # the TOTAL_EPISODE_FRAMES is reached. The controller simulation then
         # ouptuts the results to the controller output directory.
+        #####################################################################
+        #####################################################################
+        # 迭代帧直到到达导航点的末尾或到达 TOTAL_EPISODE_FRAMES。 
+        # 然后控制器仿真将结果输出到控制器输出目录。
+        #####################################################################
         reached_the_end = False
         skip_first_frame = True
         closest_index    = 0  # Index of waypoint that is currently closest to
@@ -502,9 +533,11 @@ def exec_waypoint_nav_demo(args):
         closest_distance = 0  # Closest distance of closest waypoint to car
         for frame in range(TOTAL_EPISODE_FRAMES):
             # Gather current data from the CARLA server
+            # 从CARLA服务器获取当前的数据
             measurement_data, sensor_data = client.read_data()
 
             # Update pose, timestamp
+            # 更新位置，速度和时间戳
             current_x, current_y, current_yaw = \
                 get_current_pose(measurement_data)
             current_speed = measurement_data.player_measurements.forward_speed
@@ -518,6 +551,7 @@ def exec_waypoint_nav_demo(args):
                 current_timestamp = current_timestamp - WAIT_TIME_BEFORE_START
             
             # Store history
+            # 储存历史数据
             x_history.append(current_x)
             y_history.append(current_y)
             yaw_history.append(current_yaw)
@@ -526,12 +560,15 @@ def exec_waypoint_nav_demo(args):
 
             ###
             # Controller update (this uses the controller2d.py implementation)
+            # 控制器更新
             ###
 
             # To reduce the amount of waypoints sent to the controller,
             # provide a subset of waypoints that are within some 
             # lookahead distance from the closest point to the car. Provide
             # a set of waypoints behind the car as well.
+            # 为了减少发送到控制器的导航数量，我们提供距离汽车最近的点在一定前瞻距离内的导航点的子集。 
+            # 也还要在汽车后面提供一组导航点。
             
             # Find closest waypoint index to car. First increment the index
             # from the previous index until the new distance calculations
@@ -540,6 +577,9 @@ def exec_waypoint_nav_demo(args):
             # the car will always break out of instability points where there
             # are two indices with the same minimum distance, as in the
             # center of a circle)
+            # 找到离汽车最近的导航点索引。 
+            # 首先从前一个索引增加索引，直到新的距离计算增加。 应用相同的减少索引的规则。
+            # 最终索引应该是最近的点（假设汽车总是会突破不稳定点，其中有两个索引具有相同的最小距离，如在圆心）
             closest_distance = np.linalg.norm(np.array([
                     waypoints_np[closest_index, 0] - current_x,
                     waypoints_np[closest_index, 1] - current_y]))
@@ -570,6 +610,8 @@ def exec_waypoint_nav_demo(args):
             # waypoint behind and X waypoints ahead, where X is the index
             # that has a lookahead distance specified by 
             # INTERP_LOOKAHEAD_DISTANCE
+            # 找到最接近的索引后，返回后面有 1 个路径点和前面有 X 个路径点的路径，
+            # 其中 X 是具有由 INTERP_LOOKAHEAD_DISTANCE 指定的前瞻距离的索引。
             waypoint_subset_first_index = closest_index - 1
             if waypoint_subset_first_index < 0:
                 waypoint_subset_first_index = 0
@@ -587,6 +629,8 @@ def exec_waypoint_nav_demo(args):
             # table to obtain the first and last indicies for the interpolated
             # list. Update the interpolated waypoints to the controller
             # for the next controller update.
+            # 使用哈希表中的第一个和最后一个航路点子集索引来获取插值列表的第一个和最后一个索引。 
+            # 将插值的航路点更新到控制器以进行下一次控制器更新。
             new_waypoints = \
                     wp_interp[wp_interp_hash[waypoint_subset_first_index]:\
                               wp_interp_hash[waypoint_subset_last_index] + 1]
@@ -670,6 +714,7 @@ def exec_waypoint_nav_demo(args):
         write_trajectory_file(x_history, y_history, speed_history, time_history)
 
 def main():
+    # 提取命令行参数
     """Main function.
 
     Args:
@@ -717,6 +762,7 @@ def main():
     args = argparser.parse_args()
 
     # Logging startup info
+    # 记录启动信息
     log_level = logging.DEBUG if args.debug else logging.INFO
     logging.basicConfig(format='%(levelname)s: %(message)s', level=log_level)
     logging.info('listening to server %s:%s', args.host, args.port)
@@ -724,6 +770,7 @@ def main():
     args.out_filename_format = '_out/episode_{:0>4d}/{:s}/{:0>6d}'
 
     # Execute when server connection is established
+    # 尝试连接服务器并执行demo
     while True:
         try:
             exec_waypoint_nav_demo(args)
